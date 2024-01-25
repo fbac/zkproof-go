@@ -19,13 +19,15 @@ var (
 	userPassword = big.NewInt(5)
 	userName     = "TestUser"
 
-	// Values agreed between server <-> client based on Chaum-Pedersen protocol
+	// Data agreed between server <-> client for zkproof verifications.
+	// Ideally, this would be moved to internal/zkproof/const.go.
+	// And the values would be loaded from an encrypted secret.
 	q = big.NewInt(10009)
 	g = big.NewInt(3)
 	a = big.NewInt(10)
 	b = big.NewInt(13)
 
-	// Pre-generated data
+	// Pre-generated data, needed for the client
 	B  = new(big.Int).Exp(g, b, q)
 	Y1 = new(big.Int).Exp(g, userPassword, q)
 	Y2 = new(big.Int).Exp(B, userPassword, q)

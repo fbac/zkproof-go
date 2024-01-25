@@ -31,6 +31,9 @@ type UserData struct {
 // Users is the users database
 var users = make(map[string]UserData)
 
+// Data agreed between server <-> client for zkproof verifications.
+// Ideally, this would be moved to internal/zkproof/const.go.
+// And the values would be loaded from an encrypted secret.
 var (
 	q               = big.NewInt(10009)
 	g               = big.NewInt(3)
