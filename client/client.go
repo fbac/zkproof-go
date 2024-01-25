@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	zk "github.com/fbac/zkproof-grpc/internal/zk"
 	pb "github.com/fbac/zkproof-grpc/protobuf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,18 +20,9 @@ var (
 	userPassword = big.NewInt(5)
 	userName     = "TestUser"
 
-	// Data agreed between server <-> client for zkproof verifications.
-	// Ideally, this would be moved to internal/zkproof/const.go.
-	// And the values would be loaded from an encrypted secret.
-	q = big.NewInt(10009)
-	g = big.NewInt(3)
-	a = big.NewInt(10)
-	b = big.NewInt(13)
-
-	// Pre-generated data, needed for the client
-	B  = new(big.Int).Exp(g, b, q)
-	Y1 = new(big.Int).Exp(g, userPassword, q)
-	Y2 = new(big.Int).Exp(B, userPassword, q)
+	// We need Y1 and Y2 to prove y1 = gx^1 and y2 = hx^2
+	Y1 = zk.GenerateY(zk.G, userPassword, zk.P)
+	Y2 = zk.GenerateY(zk.GB, userPassword, zk.P)
 )
 
 func main() {
@@ -74,7 +66,7 @@ func main() {
 
 	// On this step we calculate the challenge answer based on Chaum-Pedersen
 	slog.InfoContext(ctx, "Calculating answer to challenge")
-	answerToChallenge := (userPassword.Int64() + a.Int64()*resp.C) % q.Int64()
+	answerToChallenge := (userPassword.Int64() + zk.A.Int64()*resp.C) % zk.P.Int64()
 
 	// Invoke the verify auth endpoint for this user and answerToChallenge
 	verify, err := c.VerifyAuthentication(ctx, &pb.AuthenticationAnswerRequest{

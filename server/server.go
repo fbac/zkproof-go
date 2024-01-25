@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net"
 
+	zk "github.com/fbac/zkproof-grpc/internal/zk"
 	pb "github.com/fbac/zkproof-grpc/protobuf"
 	"google.golang.org/grpc"
 )
@@ -28,21 +29,9 @@ type UserData struct {
 	Y2 int64
 }
 
-// Users is the users database
-var users = make(map[string]UserData)
-
-// Data agreed between server <-> client for zkproof verifications.
-// Ideally, this would be moved to internal/zkproof/const.go.
-// And the values would be loaded from an encrypted secret.
 var (
-	q               = big.NewInt(10009)
-	g               = big.NewInt(3)
-	a               = big.NewInt(10)
-	b               = big.NewInt(13)
-	ab              = new(big.Int).Mul(a, b)
-	A               = new(big.Int).Exp(g, a, q)
-	B               = new(big.Int).Exp(g, b, q)
-	C               = new(big.Int).Exp(g, ab, q)
+	// Users database
+	users           = make(map[string]UserData)
 	challenge int64 = 0
 )
 
@@ -97,49 +86,13 @@ func (s *grpcServer) VerifyAuthentication(ctx context.Context, in *pb.Authentica
 		return &pb.AuthenticationAnswerResponse{}, fmt.Errorf("user doesn't exist")
 	}
 
-	// g ^ answerToChallenge % q
-	a1 := verifyExp(*g, *big.NewInt(in.S), *q)
-	slog.InfoContext(ctx, "DEBUG!", slog.Int64("a1", a1.Int64())) // Change to DebugContext
-
-	// A^challenge * y1
-	a2 := verifyExpMod(A, big.NewInt(user.Y1), big.NewInt(challenge))
-	slog.InfoContext(ctx, "DEBUG!", slog.Int64("a2", a2.Int64())) // Change to DebugContext
-
-	// B ^ answerToChallenge % q
-	b1 := verifyExp(*B, *big.NewInt(in.S), *q)
-	slog.InfoContext(ctx, "DEBUG!", slog.Int64("b1", b1.Int64())) // Change to DebugContext
-
-	// C^challenge * y2
-	b2 := verifyExpMod(C, big.NewInt(user.Y2), big.NewInt(challenge))
-	slog.InfoContext(ctx, "DEBUG!", slog.Int64("b2", b2.Int64())) // Change to DebugContext
-
-	// In order to be verified: a1 == a2 && b1 == b2
-	if a1.Cmp(a2) == 0 && b1.Cmp(b2) == 0 {
-		slog.InfoContext(ctx, "Session verified for", slog.String("user", in.AuthId))
+	// Authenticate the user if the answer to the challenge is correct
+	if isVerified := zk.Verify(ctx, big.NewInt(user.Y1), big.NewInt(user.Y2), big.NewInt(in.S), big.NewInt(challenge)); isVerified {
 		return &pb.AuthenticationAnswerResponse{SessionId: "ValidSession"}, nil
 	}
 
 	// If not verified, return an invalid session.
 	return &pb.AuthenticationAnswerResponse{SessionId: "NotValid"}, nil
-}
-
-// x ^ y * z
-func verifyExp(x, y, z big.Int) *big.Int {
-	return new(big.Int).Exp(&x, &y, &z)
-}
-
-// Verify the following cases
-// A^challenge * y1
-// C^challenge * y2
-func verifyExpMod(N, Y, challenge *big.Int) *big.Int {
-	// Calculate the exponent.
-	expResult := N.Exp(N, challenge, nil)
-
-	// Multiply
-	mulResult := expResult.Mul(expResult, Y)
-
-	// Mod and return
-	return new(big.Int).Mod(mulResult, q)
 }
 
 func main() {

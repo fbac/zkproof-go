@@ -18,7 +18,7 @@ LDFLAGS		:= "-w -s"
 # Go #
 ######
 .PHONY: all
-all: generate-proto test build
+all: generate-proto unit-test server client
 
 .PHONY: client
 client:
@@ -50,4 +50,4 @@ generate-proto:
 .PHONY: unit-test
 unit-test:
 	@echo "\n\t$(C_GREEN)# Run test and generate new coverage.out$(C_END)"
-	go test -short -coverprofile=coverage.out -covermode=atomic -race ./...
+	go test ./...
