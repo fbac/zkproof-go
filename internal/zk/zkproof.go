@@ -18,10 +18,12 @@ var (
 	AB = new(big.Int).Mul(A, B)
 )
 
+// Used to generate X^Y MOD Z.
 func GenerateY(x, y, z *big.Int) *big.Int {
 	return new(big.Int).Exp(x, y, z)
 }
 
+// Used to generate Y1 and Y2 based on a provided password.
 func GenerateYPair(userPassword *big.Int) (Y1 *big.Int, Y2 *big.Int) {
 	// g^b
 	GB := new(big.Int).Exp(G, B, P)
@@ -30,11 +32,14 @@ func GenerateYPair(userPassword *big.Int) (Y1 *big.Int, Y2 *big.Int) {
 	return Y1, Y2
 }
 
+// Challenge is just a random number [0,1000].
+// This would be ideally a configurable setting.
 func Challenge() *int64 {
 	r := rand.Int63n(1000)
 	return &r
 }
 
+// Challenge answer is ans = password + a x challenge MOD prime
 func ChallengeAnswer(userPassword, challenge int64) *int64 {
 	x := (userPassword + A.Int64()*challenge) % P.Int64()
 	return &x
@@ -47,7 +52,7 @@ func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
 	GAB := new(big.Int).Exp(G, AB, P)
 
 	// Calculate g ^ answerToChallenge % q
-	a1 := verifyExp(G, challengeAnswer, P)
+	a1 := GenerateY(G, challengeAnswer, P)
 	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("a1", a1.Int64())) // Change to DebugContext
 
 	// Calculate A^challenge * y1
@@ -55,7 +60,7 @@ func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
 	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("a2", a2.Int64())) // Change to DebugContext
 
 	// Calculate B ^ answerToChallenge % q
-	b1 := verifyExp(GB, challengeAnswer, P)
+	b1 := GenerateY(GB, challengeAnswer, P)
 	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("b1", b1.Int64())) // Change to DebugContext
 
 	// Calculate C^challenge * y2
@@ -68,11 +73,6 @@ func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
 	}
 
 	return false
-}
-
-// x ^ y * z
-func verifyExp(x, y, z *big.Int) *big.Int {
-	return new(big.Int).Exp(x, y, z)
 }
 
 // Verify the following cases
