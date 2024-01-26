@@ -18,7 +18,7 @@ LDFLAGS		:= "-w -s"
 # Go #
 ######
 .PHONY: all
-all: generate-proto unit-test server client
+all: clean generate-proto test server client
 
 .PHONY: client
 client:
@@ -47,7 +47,7 @@ generate-proto:
 ########
 # Test #
 ########
-.PHONY: unit-test
-unit-test:
-	@echo "\n\t$(C_GREEN)# Run test and generate new coverage.out$(C_END)"
+.PHONY: test
+test:
+	@echo "\n\t$(C_GREEN)# Run zk test$(C_END)"
 	go test ./...
