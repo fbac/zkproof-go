@@ -78,7 +78,7 @@ func (s *grpcServer) CreateAuthenticationChallenge(ctx context.Context, in *pb.A
 
 	// Update challenge
 	slog.InfoContext(ctx, "Creating challenge for", slog.String("user", userName))
-	challenge = *zk.Challenge()
+	challenge = zk.Challenge()
 
 	// Return the proper challenge for this user.
 	return &pb.AuthenticationChallengeResponse{

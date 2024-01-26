@@ -24,19 +24,19 @@ func GenerateY(x, y, z *big.Int) *big.Int {
 }
 
 // Used to generate Y1 and Y2 based on a provided password.
-func GenerateYPair(userPassword *big.Int) (Y1 *big.Int, Y2 *big.Int) {
+func GenerateYPair(userPassword *big.Int) (*big.Int, *big.Int) {
 	// g^b
 	GB := new(big.Int).Exp(G, B, P)
-	Y1 = GenerateY(G, userPassword, P)
-	Y2 = GenerateY(GB, userPassword, P)
+	Y1 := GenerateY(G, userPassword, P)
+	Y2 := GenerateY(GB, userPassword, P)
 	return Y1, Y2
 }
 
 // Challenge is just a random number [0,1000].
 // This would be ideally a configurable setting.
-func Challenge() *int64 {
+func Challenge() int64 {
 	r := rand.Int63n(1000)
-	return &r
+	return r
 }
 
 // Challenge answer is ans = password + a x challenge MOD prime
@@ -46,26 +46,13 @@ func ChallengeAnswer(userPassword, challenge int64) *int64 {
 }
 
 func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
-	// Calculate g^a, g^b,g^ab
-	GA := new(big.Int).Exp(G, A, P)
-	GB := new(big.Int).Exp(G, B, P)
-	GAB := new(big.Int).Exp(G, AB, P)
-
-	// Calculate g ^ answerToChallenge % q
-	a1 := GenerateY(G, challengeAnswer, P)
-	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("a1", a1.Int64())) // Change to DebugContext
-
-	// Calculate A^challenge * y1
-	a2 := verifyExpMod(GA, Y1, challenge)
-	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("a2", a2.Int64())) // Change to DebugContext
-
-	// Calculate B ^ answerToChallenge % q
-	b1 := GenerateY(GB, challengeAnswer, P)
-	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("b1", b1.Int64())) // Change to DebugContext
-
-	// Calculate C^challenge * y2
-	b2 := verifyExpMod(GAB, Y2, challenge)
-	//slog.InfoContext(ctx, "DEBUG!", slog.Int64("b2", b2.Int64())) // Change to DebugContext
+	GA := new(big.Int).Exp(G, A, P)         // g^a
+	GB := new(big.Int).Exp(G, B, P)         // g^b
+	GAB := new(big.Int).Exp(G, AB, P)       // g^ab
+	a1 := GenerateY(G, challengeAnswer, P)  // Calculate g ^ answerToChallenge % q
+	a2 := verifyExpMod(GA, Y1, challenge)   // Calculate A^challenge * y1
+	b1 := GenerateY(GB, challengeAnswer, P) // Calculate B ^ answerToChallenge % q
+	b2 := verifyExpMod(GAB, Y2, challenge)  // Calculate C^challenge * y2
 
 	// In order to be verified: a1 == a2 && b1 == b2
 	if a1.Cmp(a2) == 0 && b1.Cmp(b2) == 0 {
@@ -79,6 +66,9 @@ func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
 // A^challenge * y1
 // C^challenge * y2
 func verifyExpMod(N, Y, challenge *big.Int) *big.Int {
+	// Note: the following calculations can be executed in only one line.
+	// I'm avoiding this to make it more legible.
+
 	// Calculate the exponent.
 	expResult := N.Exp(N, challenge, nil)
 

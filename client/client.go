@@ -52,10 +52,10 @@ func main() {
 	}
 	defer conn.Close()
 	slog.InfoContext(ctx, "Connected to", slog.String("host", host))
-
+	
 	// Create the grpc client
 	c := pb.NewAuthClient(conn)
-
+	
 	// We generate Y1 and Y2 calculated with the provided userPassword
 	Y1, Y2 := zk.GenerateYPair(big.NewInt(userPassword))
 

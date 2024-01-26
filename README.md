@@ -7,6 +7,13 @@
 - Build client: `make client`
 - Clear binaries: `make clean`
 - `make all` will clean, re-generate proto, test, build server and build client.
+- `make test` will test ZK Go code.
+- `make e2e` builds the server and client container images and run two test: happy and sad scenarios.
+
+### images
+
+- `make server-img` builds the server img container.
+- `make client-img` builds the client img container
 
 ## zkproof-server
 

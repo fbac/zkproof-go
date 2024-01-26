@@ -1,0 +1,37 @@
+version: '3'
+services:
+  # Runs the zkproof-server
+  zkproof-server:
+    network_mode: 'host'
+    build:
+      context: .
+      dockerfile: ./builds/Dockerfile.server
+    container_name: zkproof-server
+    ports:
+      - '50051:50051'
+    restart: unless-stopped
+
+  # Runs a client which will register the user testUser with password 1
+  zkproof-client-success:
+    network_mode: 'host'
+    build:
+      context: .
+      dockerfile: ./builds/Dockerfile.client
+    container_name: zkproof-client-success
+    depends_on:
+      - zkproof-server
+    entrypoint: ['./zkproof-client']
+    command: ['-host', '127.0.0.1']
+
+  # Runs a client which will try to log in as user testUser with password 2
+  # SHOULD FAIL!
+  zkproof-client-failure:
+    network_mode: 'host'
+    build:
+      context: .
+      dockerfile: ./builds/Dockerfile.client
+    container_name: zkproof-client-failure
+    depends_on:
+      - zkproof-client-success
+    entrypoint: ['./zkproof-client']
+    command: ['-host', '127.0.0.1', '-password', '2']

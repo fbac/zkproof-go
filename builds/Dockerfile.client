@@ -1,0 +1,21 @@
+# Builder image
+FROM golang:1.21.6-bookworm as builder
+
+USER root
+
+# Dependencies
+#RUN dnf install -y golang git
+RUN mkdir /build
+WORKDIR /build
+
+# Golang build
+COPY go.mod .
+COPY go.sum .
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -a -installsuffix cgo -ldflags '-w -s -extldflags "-static"' -o zkproof-client client/client.go
+
+# Final image
+FROM quay.io/centos/centos:stream8
+COPY --from=builder /build/zkproof-client /app/
+WORKDIR /app
+ENTRYPOINT ["./zkproof-client"]

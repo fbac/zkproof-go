@@ -50,4 +50,31 @@ generate-proto:
 .PHONY: test
 test:
 	@echo "\n\t$(C_GREEN)# Run zk test$(C_END)"
-	go test ./...
+	go test -v ./...
+
+.PHONY: e2e
+e2e:
+	@echo "\n\t$(C_GREEN)# Run e2e zk test$(C_END)"
+	@docker rm --force zkproof-server
+	@docker rm --force zkproof-client-success
+	@docker rm --force zkproof-client-failure
+	docker-compose up
+
+##############
+# containers #
+##############
+
+.PHONY: server-img
+server-img:
+	@echo "\n\t$(C_GREEN)# Build zkproog-server container image$(C_END)"
+	docker build -f builds/Dockerfile.server -t zkproof-server:latest .
+
+.PHONY: client-img
+client-img:
+	@echo "\n\t$(C_GREEN)# Build zkproog-client container image$(C_END)"
+	docker build -f builds/Dockerfile.client -t zkproof-client:latest .
+
+.PHONY: server-img-run
+server-img-run:
+	@docker rm --force zkproof-server
+	docker run --rm -ti --network host -p 50051:50051/tcp --name zkproof-server -d zkproof-server:latest

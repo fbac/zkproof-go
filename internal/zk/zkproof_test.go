@@ -19,10 +19,10 @@ func TestZKProofSuccess(t *testing.T) {
 	// The answer to the challenge is based on the formula:
 	// ans = password + a x challenge MOD prime.
 	// The prime number is set between both parties at the beginning.
-	challengeAnswer := ChallengeAnswer(userPassword, *challenge)
+	challengeAnswer := ChallengeAnswer(userPassword, challenge)
 
 	// Verify verifies that the two ecuations are equal.
-	if !Verify(Y1, Y2, big.NewInt(*challengeAnswer), big.NewInt(*challenge)) {
+	if !Verify(Y1, Y2, big.NewInt(*challengeAnswer), big.NewInt(challenge)) {
 		t.Fail()
 	}
 }
@@ -41,11 +41,11 @@ func TestZKProofFailure(t *testing.T) {
 	// The answer to the challenge is based on the formula:
 	// ans = password + a x challenge MOD prime.
 	// The prime number is set between both parties at the beginning.
-	// On this case we provide a WRONG password.
-	challengeAnswer := ChallengeAnswer(11, *challenge)
+	// On this case we provide a *WRONG* password.
+	challengeAnswer := ChallengeAnswer(11, challenge)
 
 	// Verify verifies that the two ecuations are equal.
-	if Verify(Y1, Y2, big.NewInt(*challengeAnswer), big.NewInt(*challenge)) {
+	if Verify(Y1, Y2, big.NewInt(*challengeAnswer), big.NewInt(challenge)) {
 		t.Fail()
 	}
 }
