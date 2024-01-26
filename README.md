@@ -9,15 +9,12 @@
 - `make all` will clean, re-generate proto, test, build server and build client.
 - `make test` will test ZK Go code.
 - `make e2e` builds the server and client container images and run two test: happy and sad scenarios.
-
-### images
-
 - `make server-img` builds the server img container.
-- `make client-img` builds the client img container
+- `make client-img` builds the client img container.
 
 ## zkproof-server
 
-By default, the server is executed listening on `localhost:50051`
+By default, the server is executed listening on `localhost:50051`.
 
 ```text
 Usage of ./bin/zkproof-server:
@@ -29,7 +26,7 @@ Usage of ./bin/zkproof-server:
 
 ## zkproof-client
 
-By default, the server is connects to `localhost:50051` as user `testUser` with password `1`
+By default, the server is connects to `localhost:50051` as user `testUser` with password `1`.
 
 ```text
 Usage of ./bin/zkproof-client:
@@ -42,3 +39,10 @@ Usage of ./bin/zkproof-client:
   -user string
         Username (default "testUser")
 ```
+
+### Manual test
+
+- `make all`
+- Run `./bin/zkproof-server &`
+- Run `./bin/zkproof-client`
+- Run `killall zkproof-server` to stop the server.
