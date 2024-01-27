@@ -18,41 +18,59 @@ var (
 	AB = new(big.Int).Mul(A, B)
 )
 
-// Used to generate X^Y MOD Z.
-func GenerateY(x, y, z *big.Int) *big.Int {
-	return new(big.Int).Exp(x, y, z)
+/* ZK Client functions */
+
+type ZKClient struct{}
+
+type ZKProved interface {
+	GenerateYPair(*big.Int) (*big.Int, *big.Int)
+	ChallengeAnswer(int64, int64) int64
+}
+
+type ZKServer struct{}
+
+type ZKProver interface {
+	Challenge() int64
+	Verify(*big.Int, *big.Int, *big.Int, *big.Int) bool
 }
 
 // Used to generate Y1 and Y2 based on a provided password.
-func GenerateYPair(userPassword *big.Int) (*big.Int, *big.Int) {
+func (s *ZKClient) GenerateYPair(userPassword *big.Int) (*big.Int, *big.Int) {
 	// g^b
 	GB := new(big.Int).Exp(G, B, P)
-	Y1 := GenerateY(G, userPassword, P)
-	Y2 := GenerateY(GB, userPassword, P)
+	Y1 := generateExp(G, userPassword, P)
+	Y2 := generateExp(GB, userPassword, P)
 	return Y1, Y2
 }
 
+// Used to generate X^Y MOD Z.
+func generateExp(x, y, z *big.Int) *big.Int {
+	return new(big.Int).Exp(x, y, z)
+}
+
+// Challenge answer is ans = password + a x challenge MOD prime
+func (s *ZKClient) ChallengeAnswer(userPassword, challenge int64) int64 {
+	x := (userPassword + A.Int64()*challenge) % P.Int64()
+	return x
+}
+
+/* ZK Server functions */
+
 // Challenge is just a random number [0,1000].
 // This would be ideally a configurable setting.
-func Challenge() int64 {
+func (s *ZKServer) Challenge() int64 {
 	r := rand.Int63n(1000)
 	return r
 }
 
-// Challenge answer is ans = password + a x challenge MOD prime
-func ChallengeAnswer(userPassword, challenge int64) *int64 {
-	x := (userPassword + A.Int64()*challenge) % P.Int64()
-	return &x
-}
-
-func Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
-	GA := new(big.Int).Exp(G, A, P)         // g^a
-	GB := new(big.Int).Exp(G, B, P)         // g^b
-	GAB := new(big.Int).Exp(G, AB, P)       // g^ab
-	a1 := GenerateY(G, challengeAnswer, P)  // Calculate g ^ answerToChallenge % q
-	a2 := verifyExpMod(GA, Y1, challenge)   // Calculate A^challenge * y1
-	b1 := GenerateY(GB, challengeAnswer, P) // Calculate B ^ answerToChallenge % q
-	b2 := verifyExpMod(GAB, Y2, challenge)  // Calculate C^challenge * y2
+func (s *ZKServer) Verify(Y1, Y2, challengeAnswer, challenge *big.Int) bool {
+	GA := generateExp(G, A, P)                // g^a
+	GB := generateExp(G, B, P)                // g^b
+	GAB := generateExp(G, AB, P)              // g^ab
+	a1 := generateExp(G, challengeAnswer, P)  // Calculate g ^ answerToChallenge % q
+	a2 := verifyExpMod(GA, Y1, challenge)     // Calculate A^challenge * y1
+	b1 := generateExp(GB, challengeAnswer, P) // Calculate B ^ answerToChallenge % q
+	b2 := verifyExpMod(GAB, Y2, challenge)    // Calculate C^challenge * y2
 
 	// In order to be verified: a1 == a2 && b1 == b2
 	if a1.Cmp(a2) == 0 && b1.Cmp(b2) == 0 {

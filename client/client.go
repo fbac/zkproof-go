@@ -24,6 +24,11 @@ var (
 	userName, hostName, port string
 )
 
+type zkClient struct {
+	pb.AuthClient
+	zk.ZKProved
+}
+
 func main() {
 	flag.StringVar(&hostName, "host", "localhost", "connect to hostname")
 	flag.StringVar(&port, "port", "50051", "TCP port")
@@ -52,16 +57,19 @@ func main() {
 	}
 	defer conn.Close()
 	slog.InfoContext(ctx, "Connected to", slog.String("host", host))
-	
+
 	// Create the grpc client
-	c := pb.NewAuthClient(conn)
-	
+	zkClient := zkClient{
+		pb.NewAuthClient(conn),
+		&zk.ZKClient{},
+	}
+
 	// We generate Y1 and Y2 calculated with the provided userPassword
-	Y1, Y2 := zk.GenerateYPair(big.NewInt(userPassword))
+	Y1, Y2 := zkClient.GenerateYPair(big.NewInt(userPassword))
 
 	// Call the register endpoint to register the username, Y1 and Y2
 	// This will register the user if it doesn't exist.
-	_, err = c.Register(ctx, &pb.RegisterRequest{
+	_, err = zkClient.Register(ctx, &pb.RegisterRequest{
 		User: userName,
 		Y1:   Y1.Int64(),
 		Y2:   Y2.Int64(),
@@ -73,7 +81,7 @@ func main() {
 	slog.InfoContext(ctx, "Registered user with", slog.String("username", userName))
 
 	// Request an authentication challenge from the server for this user.
-	resp, err := c.CreateAuthenticationChallenge(ctx, &pb.AuthenticationChallengeRequest{
+	resp, err := zkClient.CreateAuthenticationChallenge(ctx, &pb.AuthenticationChallengeRequest{
 		User: userName,
 	})
 	if err != nil {
@@ -84,19 +92,14 @@ func main() {
 
 	// On this step we calculate the challenge answer based on Chaum-Pedersen
 	// answerToChallenge is calculated from the password and server's challenge
-	answerToChallenge := zk.ChallengeAnswer(userPassword, resp.C)
+	answerToChallenge := zkClient.ChallengeAnswer(userPassword, resp.C)
 
 	// Invoke the verify auth endpoint for this user and answerToChallenge
-	verify, err := c.VerifyAuthentication(ctx, &pb.AuthenticationAnswerRequest{
+	verify, err := zkClient.VerifyAuthentication(ctx, &pb.AuthenticationAnswerRequest{
 		AuthId: userName,
-		S:      *answerToChallenge})
+		S:      answerToChallenge})
 	if err != nil {
-		slog.ErrorContext(ctx, "Error verifying challenge", slog.String("message", err.Error()))
-		os.Exit(1)
-	}
-
-	if verify.SessionId == "NotValid" {
-		slog.WarnContext(ctx, "Authentication failure", slog.String("sessionId", verify.SessionId))
+		slog.ErrorContext(ctx, "Error", slog.String("message", err.Error()))
 		os.Exit(1)
 	}
 

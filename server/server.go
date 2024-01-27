@@ -24,6 +24,7 @@ import (
 // The AuthServer interface forces us to embed UnimplementedAuthServer.
 type grpcServer struct {
 	pb.UnimplementedAuthServer
+	zk.ZKProver
 }
 
 // userData holds the exchanged Y's
@@ -78,7 +79,7 @@ func (s *grpcServer) CreateAuthenticationChallenge(ctx context.Context, in *pb.A
 
 	// Update challenge
 	slog.InfoContext(ctx, "Creating challenge for", slog.String("user", userName))
-	challenge = zk.Challenge()
+	challenge = s.Challenge()
 
 	// Return the proper challenge for this user.
 	return &pb.AuthenticationChallengeResponse{
@@ -98,14 +99,14 @@ func (s *grpcServer) VerifyAuthentication(ctx context.Context, in *pb.Authentica
 	}
 
 	// Authenticate the user if the answer to the challenge is correct
-	if zk.Verify(big.NewInt(user.Y1), big.NewInt(user.Y2), big.NewInt(in.S), big.NewInt(challenge)) {
+	if s.Verify(big.NewInt(user.Y1), big.NewInt(user.Y2), big.NewInt(in.S), big.NewInt(challenge)) {
 		slog.InfoContext(ctx, "Authentication verified for", slog.String("user", userName))
 		return &pb.AuthenticationAnswerResponse{SessionId: "ValidSession"}, nil
 	}
 
 	// If not verified, return an invalid session.
 	slog.WarnContext(ctx, "Authentication failed for", slog.String("user", userName))
-	return &pb.AuthenticationAnswerResponse{SessionId: "NotValid"}, nil
+	return nil, fmt.Errorf("authentication failed for user %s", userName)
 }
 
 func main() {
@@ -136,7 +137,9 @@ func main() {
 	s := grpc.NewServer()
 
 	// Register the AuthServer methods to this server
-	pb.RegisterAuthServer(s, &grpcServer{})
+	pb.RegisterAuthServer(s, &grpcServer{
+		ZKProver: &zk.ZKServer{},
+	})
 
 	// Serve on the listener
 	log.Printf("gRPC server listening at %v", l.Addr())
