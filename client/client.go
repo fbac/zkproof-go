@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	zk "github.com/fbac/zkproof-grpc/internal/zk"
 	"github.com/fbac/zkproof-grpc/pkg/check"
+	"github.com/fbac/zkproof-grpc/pkg/zk"
 	pb "github.com/fbac/zkproof-grpc/protobuf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
