@@ -7,8 +7,8 @@ import (
 
 // This functional test should success, as we provide the correct password.
 func TestZKProofSuccess(t *testing.T) {
-	var s ZKProver = new(ZKServer)
-	var c ZKProved = new(ZKClient)
+	var s ZKVerifier = new(ZKServer)
+	var c ZKProver = new(ZKClient)
 
 	// The client generate a new random password to register itself.
 	var userPassword int64 = 10
@@ -32,8 +32,8 @@ func TestZKProofSuccess(t *testing.T) {
 
 // This functional test should fail, as we provide an incorrect password.
 func TestZKProofFailure(t *testing.T) {
-	var s ZKProver = new(ZKServer)
-	var c ZKProved = new(ZKClient)
+	var s ZKVerifier = new(ZKServer)
+	var c ZKProver = new(ZKClient)
 
 	// The client generate a new random password to register itself.
 	var userPassword int64 = 10

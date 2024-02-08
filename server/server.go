@@ -17,14 +17,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-/*
-	Calculations and data sourced from https://crypto.stackexchange.com/questions/99262/chaum-pedersen-protocol
-*/
-
 // The AuthServer interface forces us to embed UnimplementedAuthServer.
 type grpcServer struct {
 	pb.UnimplementedAuthServer
-	zk.ZKProver
+	zk.ZKVerifier
 }
 
 // userData holds the exchanged Y's
@@ -138,7 +134,7 @@ func main() {
 
 	// Register the AuthServer methods to this server
 	pb.RegisterAuthServer(s, &grpcServer{
-		ZKProver: &zk.ZKServer{},
+		ZKVerifier: &zk.ZKServer{},
 	})
 
 	// Serve on the listener

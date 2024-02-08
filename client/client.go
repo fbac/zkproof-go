@@ -18,15 +18,13 @@ import (
 )
 
 var (
-	// userPassword is hardcoded as this is just a PoC
-	// In prod the user has to set this via flag/envvar
 	userPassword             int64
 	userName, hostName, port string
 )
 
 type zkClient struct {
 	pb.AuthClient
-	zk.ZKProved
+	zk.ZKProver
 }
 
 func main() {
